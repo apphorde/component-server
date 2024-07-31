@@ -1,0 +1,10 @@
+{
+  "name": "component-server",
+  "main": "./index.mjs",
+  "scripts": {
+    "ci": "npm i"
+  },
+  "dependencies": {
+    "@cloud-cli/http": "latest"
+  }
+}
