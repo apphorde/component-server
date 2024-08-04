@@ -62,7 +62,7 @@ createServer(async function (request, response) {
   }
 });
 
-function badRequest(reason) {
+function badRequest(response, reason) {
   response.writeHead(400).end(reason);
 }
 
