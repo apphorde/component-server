@@ -54,6 +54,11 @@ createServer(async function (request, response) {
       await mkdir(folder);
     }
 
+    if (version !== "latest" && existsSync(file)) {
+      response.writeHead(409).end(`Version ${version} was already published.`);
+      return;
+    }
+
     await writeFile(file, source);
     response.end("OK\n");
   } catch (e) {
