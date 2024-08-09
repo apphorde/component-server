@@ -1,11 +1,15 @@
 import createServer from "@cloud-cli/http";
 import { existsSync } from "fs";
 import { mkdir, writeFile } from "fs/promises";
-import path, { join } from "path";
+import { join } from "path";
 
 const dataPath = process.env.DATA_PATH || join(process.cwd(), "data");
-const nameRe = /^[a-z]+-[a-z0-9]+$/;
-const versionRe = /^(\d{1,2}\.\d{1,2}\.\d{1,2}|\d{1,2}|latest)$/;
+const apiKeysPath = process.env.API_KEYS_PATH || join(process.cwd(), "keys");
+
+const scopeRe = /@[a-z-]+/;
+const componentNameRe = /^[a-z]+-[a-z]+$/;
+const libraryNameRe = /^[a-z]{1}[a-z-]+$/;
+const versionRe = /^(\d{1,2}\.\d{1,3}\.\d{1,2}|\d{1,2}|latest)$/;
 
 createServer(async function (request, response) {
   const { method } = request;
@@ -16,51 +20,20 @@ createServer(async function (request, response) {
 
   try {
     const { pathname } = new URL(request.url, "http://localhost");
-    const nameAndVersion = pathname.slice(1);
+    const pathParts = pathname.split("/");
     const body = Buffer.concat(await request.toArray()).toString("utf8");
 
-    let name = "";
-    let source = "";
-    let version = "latest";
-
-    if (nameAndVersion) {
-      const [a, b = "latest"] = nameAndVersion.split("@");
-      source = body;
-      name = a;
-      version = b;
-    } else {
-      const json = JSON.parse(body);
-      name = json.name;
-      source = json.source;
-      version = json.version || "latest";
+    if (["component", "library"].includes(pathParts[0])) {
+      return onPublish(
+        pathParts[0],
+        pathParts.slice(1),
+        request,
+        response,
+        body
+      );
     }
 
-    if (!nameRe.test(name)) {
-      return badRequest(response, "Invalid component name: " + name);
-    }
-
-    if (!versionRe.test(version)) {
-      return badRequest(response, "Invalid component version: " + version);
-    }
-
-    if (!String(source).trim()) {
-      return badRequest(response, "Invalid component source");
-    }
-
-    const folder = join(dataPath, name);
-    const file = join(folder, version + ".mjs");
-
-    if (!existsSync(folder)) {
-      await mkdir(folder);
-    }
-
-    if (version !== "latest" && existsSync(file)) {
-      response.writeHead(409).end(`Version ${version} was already published.`);
-      return;
-    }
-
-    await writeFile(file, source);
-    response.end("OK\n");
+    notFound(response);
   } catch (e) {
     console.log(e);
     response.writeHead(500).end("Internal error");
@@ -73,4 +46,78 @@ function badRequest(response, reason) {
 
 function notFound(response) {
   response.writeHead(404).end("Not found");
+}
+
+async function onPublish(type, pathParts, request, response, source) {
+  const [scope, nameAndVersion] = pathParts;
+  const apiKey = (request.headers.authorization || "").trim();
+
+  if (!apiKey) {
+    return badRequest(
+      response,
+      "Invalid API key. Send your API key in the Authorization header."
+    );
+  }
+
+  if (!scope || !nameAndVersion) {
+    return badRequest(response, "Invalid specifier. Use @scope/name format.");
+  }
+
+  if (!scopeRe.test(scope)) {
+    return badRequest(
+      response,
+      `Invalid scope: ${scope}. Scope must be prefixed with @ and have only lowercase characters.`
+    );
+  }
+
+  const apiKeyFile = join(apiKeysPath, scope + ".key");
+  const storedKey = existsSync(apiKeyFile)
+    ? await readFile(apiKeyFile, "utf8")
+    : "";
+
+  if (storedKey !== apiKey) {
+    return badRequest(response, "Invalid API key.");
+  }
+
+  const [name, version = "latest"] = nameAndVersion.split("@");
+
+  if (type === "component" && !componentNameRe.test(name)) {
+    return badRequest(
+      response,
+      `Invalid component name: ${name}. Components must have a lowercase name and contain a single dash in the middle.`
+    );
+  }
+
+  if (type === "library" && !libraryNameRe.test(name)) {
+    return badRequest(
+      response,
+      `Invalid library name: ${name}. Libraries name must have only lowercase characters.`
+    );
+  }
+
+  if (!versionRe.test(version)) {
+    return badRequest(
+      response,
+      `Invalid version: ${version}. Use either "latest" or x.y.z format with only numbers, e.g. 1.9.0`
+    );
+  }
+
+  if (!String(source).trim()) {
+    return badRequest(response, "Invalid source.");
+  }
+
+  const folder = join(dataPath, owner, name);
+  const file = join(folder, version + ".mjs");
+
+  if (!existsSync(folder)) {
+    await mkdir(folder);
+  }
+
+  if (version !== "latest" && existsSync(file)) {
+    response.writeHead(409).end(`Version ${version} was already published.`);
+    return;
+  }
+
+  await writeFile(file, source);
+  response.end("OK\n");
 }
