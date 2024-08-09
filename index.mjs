@@ -6,11 +6,6 @@ import { join } from "path";
 const dataPath = process.env.DATA_PATH || join(process.cwd(), "data");
 const apiKeysPath = process.env.API_KEYS_PATH || join(process.cwd(), "keys");
 
-const scopeRe = /@[a-z-]+/;
-const componentNameRe = /^[a-z]+-[a-z]+$/;
-const libraryNameRe = /^[a-z]{1}[a-z-]+$/;
-const versionRe = /^(\d{1,2}\.\d{1,3}\.\d{1,2}|\d{1,2}|latest)$/;
-
 createServer(async function (request, response) {
   const { method } = request;
 
@@ -60,13 +55,13 @@ async function onPublish(type, pathParts, request, response, source) {
   }
 
   if (!scope || !nameAndVersion) {
-    return badRequest(response, "Invalid specifier. Use @scope/name format.");
+    return badRequest(response, "Invalid specifier. Use scope/name format.");
   }
 
-  if (!scopeRe.test(scope)) {
+  if (!validateScope(scope)) {
     return badRequest(
       response,
-      `Invalid scope: ${scope}. Scope must be prefixed with @ and have only lowercase characters.`
+      `Invalid scope: ${scope}. Scope must have only lowercase characters and dashes.`
     );
   }
 
@@ -81,21 +76,21 @@ async function onPublish(type, pathParts, request, response, source) {
 
   const [name, version = "latest"] = nameAndVersion.split("@");
 
-  if (type === "component" && !componentNameRe.test(name)) {
+  if (type === "component" && !validateComponent(name)) {
     return badRequest(
       response,
       `Invalid component name: ${name}. Components must have a lowercase name and contain a single dash in the middle.`
     );
   }
 
-  if (type === "library" && !libraryNameRe.test(name)) {
+  if (type === "library" && !validateLibrary(name)) {
     return badRequest(
       response,
       `Invalid library name: ${name}. Libraries name must have only lowercase characters.`
     );
   }
 
-  if (!versionRe.test(version)) {
+  if (!validateVersion(version)) {
     return badRequest(
       response,
       `Invalid version: ${version}. Use either "latest" or x.y.z format with only numbers, e.g. 1.9.0`
@@ -120,4 +115,25 @@ async function onPublish(type, pathParts, request, response, source) {
 
   await writeFile(file, source);
   response.end("OK\n");
+}
+
+const scopeRe = /^[a-z-]{1}[a-z-]+$/;
+const componentNameRe = /^[a-z]+-[a-z]+$/;
+const libraryNameRe = /^[a-z]{1}[a-z-]+$/;
+const versionRe = /^(\d{1,2}\.\d{1,3}\.\d{1,2}|\d{1,2}|latest)$/;
+
+function validateScope(scope) {
+  return scopeRe.test(scope) && !scope.includes("--");
+}
+
+function validateVersion(version) {
+  return versionRe.test(version);
+}
+
+function validateComponent(component) {
+  return componentNameRe.test(component);
+}
+
+function validateLibrary(component) {
+  return libraryNameRe.test(component);
 }
