@@ -1,6 +1,6 @@
 import createServer from "@cloud-cli/http";
 import { existsSync } from "fs";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, writeFile, readFile } from "fs/promises";
 import { join } from "path";
 
 const dataPath = process.env.DATA_PATH || join(process.cwd(), "data");
