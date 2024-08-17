@@ -15,7 +15,7 @@ createServer(async function (request, response) {
 
   try {
     const { pathname } = new URL(request.url, "http://localhost");
-    const pathParts = pathname.split("/");
+    const pathParts = pathname.slice(1).split("/");
     const body = Buffer.concat(await request.toArray()).toString("utf8");
 
     if (["component", "library"].includes(pathParts[0])) {
@@ -101,7 +101,7 @@ async function onPublish(type, pathParts, request, response, source) {
     return badRequest(response, "Invalid source.");
   }
 
-  const folder = join(dataPath, owner, name);
+  const folder = join(dataPath, scope, name);
   const file = join(folder, version + ".mjs");
 
   if (!existsSync(folder)) {
