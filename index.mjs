@@ -67,7 +67,7 @@ async function onPublish(type, pathParts, request, response, source) {
 
   const apiKeyFile = join(apiKeysPath, scope + ".key");
   const storedKey = existsSync(apiKeyFile)
-    ? await readFile(apiKeyFile, "utf8")
+    ? (await readFile(apiKeyFile, "utf8")).trim()
     : "";
 
   if (storedKey !== apiKey) {
