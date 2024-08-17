@@ -71,6 +71,7 @@ async function onPublish(type, pathParts, request, response, source) {
     : "";
 
   if (storedKey !== apiKey) {
+    console.log('Invalid key. Expected %s, received %s. Check %s', storedKey, apiKey, apiKeyFile);
     return badRequest(response, "Invalid API key.");
   }
 
