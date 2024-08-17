@@ -106,7 +106,7 @@ async function onPublish(type, pathParts, request, response, source) {
   const file = join(folder, version + ".mjs");
 
   if (!existsSync(folder)) {
-    await mkdir(folder);
+    await mkdir(folder, { recursive: true });
   }
 
   if (version !== "latest" && existsSync(file)) {
