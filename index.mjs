@@ -71,11 +71,20 @@ async function onPublish(type, pathParts, request, response, source) {
     : "";
 
   if (storedKey !== apiKey) {
-    console.log('Invalid key. Expected %s, received %s. Check %s', storedKey, apiKey, apiKeyFile);
+    console.log(
+      "Invalid key. Expected %s, received %s. Check %s",
+      storedKey,
+      apiKey,
+      apiKeyFile
+    );
     return badRequest(response, "Invalid API key.");
   }
 
-  const [name, version = "latest"] = nameAndVersion.split("@");
+  let [name, version = "0.0.0"] = nameAndVersion.split("@");
+
+  if (version === "latest") {
+    version = "0.0.0";
+  }
 
   if (type === "component" && !validateComponent(name)) {
     return badRequest(
@@ -94,7 +103,7 @@ async function onPublish(type, pathParts, request, response, source) {
   if (!validateVersion(version)) {
     return badRequest(
       response,
-      `Invalid version: ${version}. Use either "latest" or x.y.z format with only numbers, e.g. 1.9.0`
+      `Invalid version: ${version}. Use either "latest", "0.0.0" or x.y.z format with only numbers, e.g. 1.9.0`
     );
   }
 
@@ -109,7 +118,7 @@ async function onPublish(type, pathParts, request, response, source) {
     await mkdir(folder, { recursive: true });
   }
 
-  if (version !== "latest" && existsSync(file)) {
+  if (version !== "latest" && version !== "0.0.0" && existsSync(file)) {
     response.writeHead(409).end(`Version ${version} was already published.`);
     return;
   }
