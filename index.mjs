@@ -61,7 +61,7 @@ async function onPublish(type, pathParts, request, response, source) {
   if (!validateScope(scope)) {
     return badRequest(
       response,
-      `Invalid scope: ${scope}. Scope must start with @ and have only lowercase characters.`
+      `Invalid scope: ${scope}. Scope must start with @ and have only lowercase characters, numbers or a dash.`
     );
   }
 
@@ -127,7 +127,7 @@ async function onPublish(type, pathParts, request, response, source) {
   response.end("OK\n");
 }
 
-const scopeRe = /^@[a-z]+$/;
+const scopeRe = /^@[a-z]+[a-z0-9-]+$/;
 const componentNameRe = /^[a-z]+-[a-z]+$/;
 const libraryNameRe = /^[a-z]{1}[a-z-]+$/;
 const versionRe = /^(\d{1,2}\.\d{1,3}\.\d{1,2}|\d{1,2}|latest)$/;
