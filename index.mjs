@@ -112,7 +112,8 @@ async function onPublish(type, pathParts, request, response, source) {
   }
 
   const folder = join(dataPath, scope, name);
-  const file = join(folder, version + ".mjs");
+  const extension = name.includes('.') ? name.split('.').pop() : 'mjs';
+  const file = join(folder, version + "." + extension);
 
   if (!existsSync(folder)) {
     await mkdir(folder, { recursive: true });
