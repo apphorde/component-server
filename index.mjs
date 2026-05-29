@@ -129,7 +129,7 @@ async function onPublish(type, pathParts, request, response, source) {
 
 const scopeRe = /^@[a-z]+[a-z0-9-]+$/;
 const componentNameRe = /^[a-z]+-[a-z]+$/;
-const libraryNameRe = /^[a-z]{1}[a-z-]+$/;
+const libraryNameRe = /^[a-z]{1}[a-z-.]+$/;
 const versionRe = /^(\d{1,2}\.\d{1,3}\.\d{1,2}|\d{1,2}|latest)$/;
 
 function validateScope(scope) {
